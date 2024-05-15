@@ -205,11 +205,62 @@ elif selected=='Database':
     database = 'bizcard'
     engine = sqlalchemy.create_engine('mysql+mysqlconnector://sakthi:Sakthi12345@localhost/bizcard'
     )
+    cursor = mydb.cursor()
 
-    query1 = 'select * from business_card'
-    df = pd.read_sql(query1, con=engine)
-    st.dataframe(df)
     
+    try:
+        query1 = 'select * from business_card'
+        df = pd.read_sql(query1, con=engine)
+        st.dataframe(df)
+        
+        
+        col1, col2, col3 = st.columns([1, 6, 1])
+        
+    except:
+        st.warning("Database will be created once image been uploaded in Image menu")
+    
+    # MODIFY MENU   
+    col1,col2,col3 = st.columns([3,10,3])
+    col2.markdown("## :red[Alter or Update the data here]")
+    column1,column2 = st.columns(2,gap="large")
+    try:
+        with column1:
+            mycursor.execute("SELECT NAME FROM BUSINESS_CARD")
+            result = mycursor.fetchall()
+            business_cards = {}
+            for row in result:
+                business_cards[row[0]] = row[0]
+            
+            st.write("")
+            selected_card = st.selectbox("Select a card holder name to update", list(business_cards.keys()))
+            st.write("")
+            st.markdown("##### :blue[Update or modify any data below]")
+            mycursor.execute("select NAME,designation,company_name,CONTACT,email,website,Address,PINCODE from BUSINESS_CARD WHERE NAME=%s",
+                            (selected_card,))
+            result = mycursor.fetchone()
+
+            # DISPLAYING ALL THE INFORMATIONS
+            st.write("")
+            NAME = st.text_input("NAME", result[0])
+            designation = st.text_input("Designation", result[1])
+            company_name = st.text_input("Company_Name", result[2])
+            CONTACT = st.text_input("CONTACT", result[3])
+            email = st.text_input("Email", result[4])
+            website = st.text_input("Website", result[5])
+            Address = st.text_input("Address", result[6])
+            PINCODE = st.text_input("PINCODE", result[7])
+
+            if st.button("Commit changes to DB"):
+                # Update the information for the selected business card in the database
+                mycursor.execute("""UPDATE BUSINESS_CARD SET NAME=%s,designation=%s,company_name=%s,CONTACT=%s,email=%s,website=%s,Address=%s,PINCODE=%s
+                                    WHERE NAME=%s""", (NAME,designation,company_name,CONTACT,email,website,Address,PINCODE,selected_card))
+                mydb.commit()
+                st.success("Information updated in database successfully.")
+                
+    except:
+        st.warning("There is no data available in the Database")
+            
+            
     
 elif selected == "Delete":
     
@@ -221,57 +272,61 @@ elif selected == "Delete":
     cursor = mydb.cursor()
 
     col1,col2 = st.columns(2)
-    with col1:
-
-        select_query = "SELECT NAME FROM business_card"
-
-        cursor.execute(select_query)
-        table1 = cursor.fetchall()
-        mydb.commit()
-
-        names = []
-
-        for i in table1:
-            names.append(i[0])
-
-        name_select = st.selectbox("Select the name", names)
-
-    with col2:
-
-        select_query = f"SELECT DESIGNATION FROM business_card WHERE NAME ='{name_select}'"
-
-        cursor.execute(select_query)
-        table2 = cursor.fetchall()
-        mydb.commit()
-
-        designations = []
-
-        for j in table2:
-            designations.append(j[0])
-
-        designation_select = st.selectbox("Select the designation", options = designations)
-
-    if name_select and designation_select:
-        col1,col2,col3 = st.columns(3)
-
+    try:
         with col1:
-            st.write(f"Selected Name : {name_select}")
-            st.write("")
-            st.write("")
-            st.write("")
-            st.write(f"Selected Designation : {designation_select}")
+
+            select_query = "SELECT NAME FROM business_card"
+
+            cursor.execute(select_query)
+            table1 = cursor.fetchall()
+            mydb.commit()
+
+            names = []
+
+            for i in table1:
+                names.append(i[0])
+
+            name_select = st.selectbox("Select the name", names)
 
         with col2:
-            st.write("")
-            st.write("")
-            st.write("")
-            st.write("")
 
-            remove = st.button("Delete", use_container_width= True)
+            select_query = f"SELECT DESIGNATION FROM business_card WHERE NAME ='{name_select}'"
 
-            if remove:
+            cursor.execute(select_query)
+            table2 = cursor.fetchall()
+            mydb.commit()
 
-                cursor.execute(f"DELETE FROM business_card WHERE NAME ='{name_select}' AND DESIGNATION = '{designation_select}'")
-                mydb.commit()
+            designations = []
 
-                st.warning("DELETED")
+            for j in table2:
+                designations.append(j[0])
+
+            designation_select = st.selectbox("Select the designation", options = designations)
+
+        if name_select and designation_select:
+            col1,col2,col3 = st.columns(3)
+
+            with col1:
+                st.write("")
+                st.write(f"Selected Name : {name_select}")
+                st.write(f"Selected Designation : {designation_select}")
+
+            with col2:
+                st.write("")
+                st.write("")
+                st.write("")
+                st.write("")
+                st.write("")
+                st.write("")
+
+                remove = st.button("Delete", use_container_width= True)
+
+                if remove:
+
+                    cursor.execute(f"DELETE FROM business_card WHERE NAME ='{name_select}' AND DESIGNATION = '{designation_select}'")
+                    mydb.commit()
+
+                    st.warning("DELETED")
+                    
+    except:
+        st.warning("There is no Database created")
